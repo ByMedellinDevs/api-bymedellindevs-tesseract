@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-bymedellin-imageocr
+    ports:
+      - "3000:3000"
+    environment:
+      - RAILS_ENV=production
+      - RAILS_MASTER_KEY=${RAILS_MASTER_KEY:-}
+      - RAILS_LOG_TO_STDOUT=true
+    volumes:
+      # Persistir logs (opcional)
+      - ./docker-volumes/logs:/rails/log
+      # Persistir base de datos (opcional)
+      - ./docker-volumes/storage:/rails/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - api-network
+
+  # Servicio opcional para desarrollo con base de datos PostgreSQL
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: api-postgres
+  #   environment:
+  #     POSTGRES_DB: api_bymedellin_imageocr_production
+  #     POSTGRES_USER: rails
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rails_password}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   networks:
+  #     - api-network
+
+networks:
+  api-network:
+    driver: bridge
+
+volumes:
+  # postgres_data:  # Descomenta si usas PostgreSQL
+  logs:
+  storage:
