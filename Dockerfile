@@ -87,5 +87,5 @@ ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
 # EasyPanel expects applications to run on port 3000
 # The platform will handle external port mapping automatically
-EXPOSE 3000
-CMD ["./bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
+EXPOSE 80
+CMD ["./bin/rails", "server", "-b", "0.0.0.0", "-p", "80"]
