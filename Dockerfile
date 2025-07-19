@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 # check=error=true
 
-# This Dockerfile is designed for production, not development. Use with Kamal or build'n'run by hand:
+# This Dockerfile is optimized for EasyPanel deployment
+# EasyPanel will automatically handle port mapping and environment variables
 # docker build -t api_bymedellin_imageocr .
-# docker run -d -p 80:80 -e RAILS_MASTER_KEY=ac7c6128ecc5c6e4f8c2bf163991eb92 -e SECRET_KEY_BASE=a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456789012345678901234567890abcdef1234567890abcdef123456789012345678 --name api_bymedellin_imageocr api_bymedellin_imageocr
 
 # For a containerized dev environment, see Dev Containers: https://guides.rubyonrails.org/getting_started_with_devcontainer.html
 
@@ -13,6 +13,14 @@ FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 
 # Rails app lives here
 WORKDIR /rails
+
+# Set production environment variables for EasyPanel
+ENV RAILS_ENV="production" \
+    BUNDLE_DEPLOYMENT="1" \
+    BUNDLE_PATH="/usr/local/bundle" \
+    BUNDLE_WITHOUT="development" \
+    RAILS_SERVE_STATIC_FILES="true" \
+    RAILS_LOG_TO_STDOUT="true"
 
 # Install base packages including Tesseract OCR and dependencies
 RUN apt-get update -qq && \
@@ -31,12 +39,6 @@ RUN apt-get update -qq && \
 
 # Verify Tesseract installation
 RUN tesseract --version && tesseract --list-langs
-
-# Set production environment
-ENV RAILS_ENV="production" \
-    BUNDLE_DEPLOYMENT="1" \
-    BUNDLE_PATH="/usr/local/bundle" \
-    BUNDLE_WITHOUT="development"
 
 # Throw-away build stage to reduce size of final image
 FROM base AS build
@@ -67,9 +69,6 @@ COPY . .
 # Precompile bootsnap code for faster boot times
 RUN bundle exec bootsnap precompile app/ lib/
 
-
-
-
 # Final stage for app image
 FROM base
 
@@ -86,6 +85,7 @@ USER 1000:1000
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
-# Start server on port 80 for Rails API
-EXPOSE 80
-CMD ["./bin/rails", "server", "-b", "0.0.0.0", "-p", "80"]
+# EasyPanel expects applications to run on port 3000
+# The platform will handle external port mapping automatically
+EXPOSE 3000
+CMD ["./bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
