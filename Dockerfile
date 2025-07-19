@@ -3,7 +3,7 @@
 
 # This Dockerfile is designed for production, not development. Use with Kamal or build'n'run by hand:
 # docker build -t api_bymedellin_imageocr .
-# docker run -d -p 80:80 -e RAILS_MASTER_KEY=<value from config/master.key> --name api_bymedellin_imageocr api_bymedellin_imageocr
+# docker run -d -p 80:80 -e RAILS_MASTER_KEY=ac7c6128ecc5c6e4f8c2bf163991eb92 -e SECRET_KEY_BASE=a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456789012345678901234567890abcdef1234567890abcdef123456789012345678 --name api_bymedellin_imageocr api_bymedellin_imageocr
 
 # For a containerized dev environment, see Dev Containers: https://guides.rubyonrails.org/getting_started_with_devcontainer.html
 

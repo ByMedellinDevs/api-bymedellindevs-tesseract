@@ -75,6 +75,13 @@ Rails.application.configure do
   # Only use :id for inspections in production.
   config.active_record.attributes_for_inspect = [ :id ]
 
+  # Temporary secret_key_base for testing purposes
+  # In production, this should be set via Rails credentials or environment variable
+  config.secret_key_base = ENV.fetch("SECRET_KEY_BASE") do
+    # Fallback secret key for testing - DO NOT use in real production
+    "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456789012345678901234567890abcdef1234567890abcdef123456789012345678"
+  end
+
   # Enable DNS rebinding protection and other `Host` header attacks.
   # config.hosts = [
   #   "example.com",     # Allow requests from example.com
