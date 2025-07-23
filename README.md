@@ -171,7 +171,7 @@ tesseract --list-langs
 
 ### Idiomas Soportados
 
-La API está configurada para usar español por defecto. Los idiomas se configuran en `config/initializers/concurrent_ocr.rb`:
+La API está configurada para usar español por defecto. Los idiomas se configuran en `src/config/initializers/concurrent_ocr.rb`:
 
 ```ruby
 # Configuración actual
@@ -232,7 +232,7 @@ docker build -t api-bymedellindevs-tesseract .
 
 # Ejecutar contenedor
 docker run -d -p 3000:3000 \
-  -e RAILS_MASTER_KEY=$(cat config/master.key) \
+  -e RAILS_MASTER_KEY=$(cat src/config/master.key) \
   --name api-ocr \
   api-bymedellindevs-tesseract
 ```
@@ -303,7 +303,7 @@ Para instrucciones detalladas de Docker, consulta:
 
 ```bash
 # Ver logs en tiempo real
-tail -f log/development.log
+tail -f src/log/development.log
 
 # Health check
 curl http://localhost:3000/api/v1/health
@@ -317,18 +317,28 @@ curl http://localhost:3000/api/v1/health | jq '.concurrency'
 ### Estructura del Proyecto
 
 ```
-app/
-├── controllers/
-│   └── api/
-│       └── v1/
-│           ├── health_controller.rb    # Health check con concurrencia
-│           └── ocr_controller.rb       # Extracción de texto optimizada
-config/
-├── initializers/
-│   ├── concurrent_ocr.rb              # Configuración de concurrencia
-│   └── cors.rb                        # Configuración CORS
-├── puma.rb                            # Configuración de workers/threads
-└── routes.rb                          # Rutas de la API
+src/                                   # Código fuente de Rails
+├── app/
+│   └── controllers/
+│       └── api/
+│           └── v1/
+│               ├── health_controller.rb    # Health check con concurrencia
+│               └── ocr_controller.rb       # Extracción de texto optimizada
+├── config/
+│   ├── initializers/
+│   │   ├── concurrent_ocr.rb              # Configuración de concurrencia
+│   │   └── cors.rb                        # Configuración CORS
+│   ├── puma.rb                            # Configuración de workers/threads
+│   └── routes.rb                          # Rutas de la API
+├── Gemfile                                # Dependencias Ruby
+└── ...                                    # Otros archivos Rails
+
+# Archivos de configuración (raíz)
+├── Dockerfile                             # Configuración Docker
+├── docker-compose.yml                     # Orquestación Docker
+├── docker-deploy.ps1                      # Script de despliegue
+├── README.md                              # Documentación principal
+└── test_simple_concurrent.ps1             # Tests de concurrencia
 ```
 
 ### Ejecutar Tests
@@ -351,10 +361,10 @@ Los logs incluyen información detallada sobre:
 
 ```bash
 # Ver logs en tiempo real
-tail -f log/development.log
+tail -f src/log/development.log
 
 # Logs específicos de OCR
-grep "OCR" log/development.log
+grep "OCR" src/log/development.log
 ```
 
 ## Ejemplos de Uso

@@ -5,50 +5,53 @@
 /.gitignore
 
 # Ignore bundler config.
-/.bundle
+/src/.bundle
 
 # Ignore all environment files.
 /.env*
+/src/.env*
 
 # Ignore all default key files.
-/config/master.key
-/config/credentials/*.key
+/src/config/master.key
+/src/config/credentials/*.key
 
 # Ignore all logfiles and tempfiles.
-/log/*
-/tmp/*
-!/log/.keep
-!/tmp/.keep
+/src/log/*
+/src/tmp/*
+!/src/log/.keep
+!/src/tmp/.keep
 
 # Ignore pidfiles, but keep the directory.
-/tmp/pids/*
-!/tmp/pids/.keep
+/src/tmp/pids/*
+!/src/tmp/pids/.keep
 
 # Ignore storage (uploaded files in development and any SQLite databases).
-/storage/*
-!/storage/.keep
-/tmp/storage/*
-!/tmp/storage/.keep
+/src/storage/*
+!/src/storage/.keep
+/src/tmp/storage/*
+!/src/tmp/storage/.keep
 
 # Ignore CI service files.
 /.github
 
 # Ignore Kamal files.
-/config/deploy*.yml
+/src/config/deploy*.yml
 /.kamal
 
 # Ignore development files
 /.devcontainer
 
-# Ignore Docker-related files
+# Ignore Docker-related files (keep in root)
 /.dockerignore
 /Dockerfile*
 
-# Ignore test files and documentation
-/test/*
+# Ignore test files and documentation (keep in root)
+/src/test/*
 /README.md
 /TESSERACT_SETUP.md
-/APIDOG_TESTING_GUIDE.md
+/DOCKER_GUIDE.md
+/EASYPANEL_DEPLOY.md
+/CONCURRENT_OCR_GUIDE.md
 
 # Ignore example and test images
 *.svg
@@ -59,17 +62,17 @@
 *.bmp
 *.tiff
 
-# Ignore shell scripts
+# Ignore shell scripts and PowerShell scripts (keep in root)
 *.sh
-
-# Ignore Apidog collection
-/apidog_collection.json
+*.ps1
 
 # Ignore node modules if any
 /node_modules
+/src/node_modules
 
 # Ignore coverage reports
 /coverage
+/src/coverage
 
 # Ignore IDE files
 /.vscode
@@ -80,3 +83,6 @@
 # Ignore OS files
 .DS_Store
 Thumbs.db
+
+# Ignore docker volumes
+/docker-volumes

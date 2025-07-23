@@ -113,7 +113,7 @@ sudo apt install tesseract-ocr-deu tesseract-ocr-ita
 
 ### Configurar idioma por defecto en la API
 
-Edita el archivo `app/controllers/api/v1/ocr_controller.rb` y modifica el método `build_tesseract_command`:
+Edita el archivo `src/app/controllers/api/v1/ocr_controller.rb` y modifica el método `build_tesseract_command`:
 
 ```ruby
 def build_tesseract_command(image_path)
