@@ -27,11 +27,30 @@ class Api::V1::HealthController < ApplicationController
     
     if exit_status == 0
       version_line = result.lines.first&.strip
+      configured_language = ENV['TESSERACT_LANGUAGE'] || 'spa'
+      available_languages = get_tesseract_languages
+      
+      # Verificar si el idioma configurado está disponible
+      requested_languages = configured_language.split('+')
+      missing_languages = requested_languages - available_languages
+      language_status = missing_languages.empty? ? 'ok' : 'warning'
+      
       {
-        status: 'ok',
+        status: language_status,
         message: 'Tesseract OCR disponible',
         version: version_line,
-        languages: get_tesseract_languages
+        language_config: {
+          configured: configured_language,
+          status: language_status,
+          missing: missing_languages,
+          message: missing_languages.empty? ? 
+            "Idioma(s) configurado(s): #{configured_language}" : 
+            "Idiomas faltantes: #{missing_languages.join(', ')}"
+        },
+        languages: {
+          available: available_languages,
+          total: available_languages.length
+        }
       }
     else
       {

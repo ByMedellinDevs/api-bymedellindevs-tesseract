@@ -76,8 +76,11 @@ class Api::V1::OcrController < ApplicationController
   end
 
   def extract_text_with_tesseract(image_path)
-    # Comando optimizado para Tesseract
-    command = "tesseract '#{image_path}' stdout -l spa --oem 3 --psm 6"
+    # Obtener idioma desde variable de entorno o usar español por defecto
+    language = ENV['TESSERACT_LANGUAGE'] || 'spa'
+    
+    # Comando optimizado para Tesseract con idioma configurable
+    command = "tesseract '#{image_path}' stdout -l #{language} --oem 3 --psm 6"
     
     Rails.logger.debug "Ejecutando Tesseract: #{command}"
     

@@ -95,7 +95,34 @@ Verifica el estado de la API, sus servicios y configuración de concurrencia.
       "status": "ok",
       "message": "Tesseract OCR disponible",
       "version": "tesseract 5.3.4",
-      "languages": ["eng", "osd", "spa"]
+      "language_config": {
+        "configured": "spa+eng",
+        "status": "ok",
+        "missing": [],
+        "message": "Idioma(s) configurado(s): spa+eng"
+      }
+```
+
+**Respuesta con advertencia (idioma faltante):**
+```json
+{
+  "status": "degraded",
+  "timestamp": "2025-07-23T15:04:25Z",
+  "services": {
+    "tesseract_ocr": {
+      "status": "warning",
+      "message": "Tesseract OCR disponible",
+      "version": "tesseract 5.3.4",
+      "language_config": {
+        "configured": "spa+fra",
+        "status": "warning",
+        "missing": ["fra"],
+        "message": "Idiomas faltantes: fra"
+      },
+      "languages": {
+        "available": ["eng", "osd", "spa"],
+        "total": 3
+      }
     },
     "concurrent_config": {
       "status": "ok",
@@ -171,15 +198,28 @@ tesseract --list-langs
 
 ### Idiomas Soportados
 
-La API está configurada para usar español por defecto. Los idiomas se configuran en `src/config/initializers/concurrent_ocr.rb`:
+La API permite configurar el idioma de Tesseract mediante la variable de entorno `TESSERACT_LANGUAGE`:
 
-```ruby
-# Configuración actual
-Rails.application.config.ocr_language = 'spa'
+```bash
+# Configurar idioma único
+TESSERACT_LANGUAGE=spa    # Español (por defecto)
+TESSERACT_LANGUAGE=eng    # Inglés
+TESSERACT_LANGUAGE=fra    # Francés
 
-# Para múltiples idiomas
-Rails.application.config.ocr_language = 'spa+eng'
+# Configurar múltiples idiomas
+TESSERACT_LANGUAGE=spa+eng        # Español e inglés
+TESSERACT_LANGUAGE=spa+eng+fra    # Español, inglés y francés
 ```
+
+**Idiomas disponibles comunes:**
+- `spa` - Español
+- `eng` - Inglés  
+- `fra` - Francés
+- `deu` - Alemán
+- `ita` - Italiano
+- `por` - Portugués
+
+La configuración se valida automáticamente al iniciar la aplicación y se registra en los logs.
 
 ### Idiomas Disponibles
 
@@ -233,6 +273,7 @@ docker build -t api-bymedellindevs-tesseract .
 # Ejecutar contenedor
 docker run -d -p 3000:3000 \
   -e RAILS_MASTER_KEY=$(cat src/config/master.key) \
+  -e TESSERACT_LANGUAGE=spa+eng \
   --name api-ocr \
   api-bymedellindevs-tesseract
 ```
@@ -242,7 +283,7 @@ docker run -d -p 3000:3000 \
 ```bash
 # Configurar variables de entorno
 cp .env.example .env
-# Editar .env con tu RAILS_MASTER_KEY
+# Editar .env con tu RAILS_MASTER_KEY y TESSERACT_LANGUAGE
 
 # Ejecutar con Docker Compose
 docker-compose up -d
