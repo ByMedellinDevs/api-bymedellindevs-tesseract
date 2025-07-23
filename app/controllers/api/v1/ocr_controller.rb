@@ -105,27 +105,6 @@ class Api::V1::OcrController < ApplicationController
   end
 
   def build_tesseract_command(image_path)
-    # Detectar si estamos ejecutando dentro de WSL o desde Windows
-    if running_in_wsl?
-      # Si estamos en WSL, usar tesseract directamente
-      "tesseract '#{image_path}' stdout -l spa"
-    else
-      # Si estamos en Windows, usar WSL para ejecutar tesseract
-      wsl_image_path = convert_to_wsl_path(image_path)
-      "wsl tesseract '#{wsl_image_path}' stdout -l spa"
-    end
-  end
-
-  def running_in_wsl?
-    # Verificar si estamos ejecutando dentro de WSL
-    File.exist?('/proc/version') && File.read('/proc/version').downcase.include?('microsoft')
-  end
-
-  def convert_to_wsl_path(windows_path)
-    # Convertir ruta de Windows a formato WSL
-    # Ejemplo: C:\temp\file.png -> /mnt/c/temp/file.png
-    wsl_path = windows_path.gsub('\\', '/')
-    wsl_path = wsl_path.gsub(/^([A-Z]):/, '/mnt/\1'.downcase)
-    wsl_path
+    "tesseract '#{image_path}' stdout -l spa"
   end
 end
