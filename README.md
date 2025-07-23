@@ -1,31 +1,31 @@
-# ByMedellin ImageOCR API
+# ByMedellin OCR API
 
-API REST desarrollada en Ruby on Rails 8.0.2 para extracción de texto de imágenes usando Tesseract OCR local en WSL (Windows Subsystem for Linux).
+API REST desarrollada en Ruby on Rails 8.0.2 para extracción de texto de imágenes usando Tesseract OCR, optimizada para múltiples peticiones simultáneas.
 
 ## Características
 
 - ✅ Extracción de texto de imágenes usando Tesseract OCR
 - ✅ Soporte para imágenes en base64 y archivos directos
-- ✅ Integración con WSL para procesamiento local
+- ✅ **Optimizada para concurrencia** - Maneja múltiples peticiones simultáneas
+- ✅ Configuración de Puma para alta concurrencia (2 workers, 8 threads)
 - ✅ Endpoints RESTful con respuestas JSON
-- ✅ Health check para monitoreo de servicios
+- ✅ Health check con información de concurrencia
 - ✅ CORS habilitado para aplicaciones frontend
-- ✅ Manejo robusto de errores
-- ✅ Conversión automática de rutas Windows a WSL
+- ✅ Manejo robusto de errores y timeouts
+- ✅ Limpieza automática de archivos temporales
 
 ## Prerrequisitos
 
 - Ruby 3.3.0+
 - Rails 8.0.2
-- WSL (Windows Subsystem for Linux)
-- Tesseract OCR instalado en WSL
+- Tesseract OCR 5.3.4+
 
 ## Instalación
 
 1. **Clonar el repositorio:**
    ```bash
    git clone <repository-url>
-   cd api-bymedellin-imageocr
+   cd api-bymedellindevs-tesseract
    ```
 
 2. **Instalar dependencias:**
@@ -39,11 +39,17 @@ API REST desarrollada en Ruby on Rails 8.0.2 para extracción de texto de imáge
    rails db:migrate
    ```
 
-4. **Instalar Tesseract en WSL:**
+4. **Instalar Tesseract:**
    ```bash
-   # En WSL
+   # Ubuntu/Debian
    sudo apt update
-   sudo apt install tesseract-ocr tesseract-ocr-spa
+   sudo apt install tesseract-ocr tesseract-ocr-spa tesseract-ocr-eng
+   
+   # macOS
+   brew install tesseract tesseract-lang
+   
+   # Windows
+   # Ver TESSERACT_SETUP.md para instrucciones detalladas
    ```
 
 5. **Iniciar el servidor:**
@@ -51,29 +57,60 @@ API REST desarrollada en Ruby on Rails 8.0.2 para extracción de texto de imáge
    rails server -p 3000
    ```
 
+## Configuración de Concurrencia
+
+La API está optimizada para manejar múltiples peticiones simultáneas:
+
+- **Workers de Puma**: 2 (configurable con `WEB_CONCURRENCY`)
+- **Threads por worker**: 8 (configurable con `RAILS_MAX_THREADS`)
+- **Capacidad total**: 16 peticiones simultáneas
+- **Timeout por petición**: 30 segundos
+- **Máximo concurrente**: 10 peticiones OCR simultáneas
+
+### Variables de Entorno
+
+```bash
+# Configuración de concurrencia
+export WEB_CONCURRENCY=2          # Número de workers
+export RAILS_MAX_THREADS=8        # Threads por worker
+export OCR_MAX_CONCURRENT=10       # Máximo OCR simultáneo
+export OCR_TIMEOUT=30              # Timeout en segundos
+```
+
 ## Endpoints de la API
 
 ### Health Check
 
 **GET** `/api/v1/health`
 
-Verifica el estado de la API y sus servicios.
+Verifica el estado de la API, sus servicios y configuración de concurrencia.
 
 **Respuesta exitosa:**
 ```json
 {
   "status": "ok",
-  "timestamp": "2024-01-15T10:30:00Z",
+  "timestamp": "2025-07-23T15:04:25Z",
   "services": {
-    "database": {
-      "status": "ok",
-      "message": "Base de datos conectada correctamente"
-    },
     "tesseract_ocr": {
       "status": "ok",
       "message": "Tesseract OCR disponible",
-      "version": "tesseract 5.3.4"
+      "version": "tesseract 5.3.4",
+      "languages": ["eng", "osd", "spa"]
+    },
+    "concurrent_config": {
+      "status": "ok",
+      "message": "Configuración de concurrencia cargada",
+      "config": {
+        "max_concurrent": 10,
+        "timeout": 30,
+        "temp_dir": "/tmp/ocr"
+      }
     }
+  },
+  "concurrency": {
+    "max_threads": 10,
+    "puma_workers": 2,
+    "puma_threads": 8
   }
 }
 ```
@@ -122,41 +159,36 @@ image: [archivo de imagen]
 
 ## Configuración de Tesseract OCR
 
-### Instalación en WSL
+### Verificación de Instalación
 
 ```bash
-# Actualizar repositorios
-sudo apt update
-
-# Instalar Tesseract y paquetes de idioma
-sudo apt install tesseract-ocr tesseract-ocr-spa tesseract-ocr-eng
-
-# Verificar instalación
+# Verificar instalación y versión
 tesseract --version
+
+# Ver idiomas instalados
+tesseract --list-langs
 ```
 
 ### Idiomas Soportados
 
-Por defecto, la API está configurada para español (`-l spa`). Para cambiar el idioma, modifica el método `build_tesseract_command` en `app/controllers/api/v1/ocr_controller.rb`:
+La API está configurada para usar español por defecto. Los idiomas se configuran en `config/initializers/concurrent_ocr.rb`:
 
 ```ruby
-# Para inglés
-"wsl tesseract '#{wsl_image_path}' stdout -l eng"
+# Configuración actual
+Rails.application.config.ocr_language = 'spa'
 
 # Para múltiples idiomas
-"wsl tesseract '#{wsl_image_path}' stdout -l spa+eng"
+Rails.application.config.ocr_language = 'spa+eng'
 ```
 
 ### Idiomas Disponibles
 
 ```bash
-# Ver idiomas instalados
-tesseract --list-langs
-
 # Instalar idiomas adicionales
 sudo apt install tesseract-ocr-fra  # Francés
 sudo apt install tesseract-ocr-deu  # Alemán
 sudo apt install tesseract-ocr-ita  # Italiano
+sudo apt install tesseract-ocr-por  # Portugués
 ```
 
 ## Formatos de Imagen Soportados
@@ -168,12 +200,25 @@ sudo apt install tesseract-ocr-ita  # Italiano
 - GIF
 - PDF (páginas individuales)
 
-## Limitaciones
+## Rendimiento y Limitaciones
 
-- Tamaño máximo de imagen: Limitado por la configuración de Rails (por defecto ~10MB)
+### Capacidad de Concurrencia
+- **Máximo simultáneo**: 16 peticiones (2 workers × 8 threads)
+- **OCR concurrente**: 10 peticiones OCR simultáneas
+- **Timeout**: 30 segundos por petición
+- **Limpieza automática**: Archivos temporales > 1 hora
+
+### Limitaciones
+- Tamaño máximo de imagen: ~10MB (configurable en Rails)
 - Tesseract funciona mejor con imágenes de alta calidad y texto claro
 - El rendimiento depende del tamaño y complejidad de la imagen
-- Requiere WSL para el procesamiento de OCR
+- Memoria recomendada: 2GB+ para alta concurrencia
+
+### Optimización
+- Usa imágenes con resolución 300 DPI o superior
+- Contraste alto entre texto y fondo
+- Texto horizontal para mejor precisión
+- Evita imágenes muy grandes (>5MB) para mejor rendimiento
 
 ## Despliegue con Docker 🐳
 
@@ -183,13 +228,13 @@ La API incluye soporte completo para Docker con Tesseract OCR preinstalado.
 
 ```bash
 # Construir imagen
-docker build -t api-bymedellin-imageocr .
+docker build -t api-bymedellindevs-tesseract .
 
 # Ejecutar contenedor
 docker run -d -p 3000:3000 \
   -e RAILS_MASTER_KEY=$(cat config/master.key) \
   --name api-ocr \
-  api-bymedellin-imageocr
+  api-bymedellindevs-tesseract
 ```
 
 ### Usando Docker Compose
@@ -206,22 +251,8 @@ docker-compose up -d
 docker-compose logs -f
 ```
 
-### Scripts de Automatización
+### Script de Automatización (Windows)
 
-#### Linux/macOS:
-```bash
-# Construir y ejecutar
-./docker-deploy.sh build
-./docker-deploy.sh run
-
-# Ver estado
-./docker-deploy.sh status
-
-# Ver logs
-./docker-deploy.sh logs
-```
-
-#### Windows (PowerShell):
 ```powershell
 # Construir y ejecutar
 .\docker-deploy.ps1 build
@@ -242,14 +273,44 @@ docker-compose logs -f
 - ✅ **Multi-stage build** para optimización de tamaño
 - ✅ **Usuario no-root** para seguridad
 - ✅ **Health checks** automáticos
-- ✅ **Volúmenes persistentes** para logs y datos
+- ✅ **Configuración de concurrencia** optimizada
 
 ### Documentación Completa
 
 Para instrucciones detalladas de Docker, consulta:
 - **[DOCKER_GUIDE.md](DOCKER_GUIDE.md)** - Guía completa de Docker
-- **[docker-compose.yml](docker-compose.yml)** - Configuración Docker Compose
-- **[.env.example](.env.example)** - Variables de entorno
+- **[TESSERACT_SETUP.md](TESSERACT_SETUP.md)** - Configuración de Tesseract
+- **[CONCURRENT_OCR_GUIDE.md](CONCURRENT_OCR_GUIDE.md)** - Guía de concurrencia
+
+## Pruebas de Concurrencia
+
+### Script de Pruebas
+
+```powershell
+# Ejecutar test de concurrencia
+.\test_simple_concurrent.ps1 -ConcurrentRequests 5 -TotalRequests 20
+
+# Test más intensivo
+.\test_simple_concurrent.ps1 -ConcurrentRequests 8 -TotalRequests 40
+```
+
+### Métricas Esperadas
+- **Tasa de éxito**: >90%
+- **Tiempo de respuesta**: 0.25-0.6 segundos
+- **Capacidad**: Hasta 16 peticiones simultáneas
+
+## Monitoreo y Logs
+
+```bash
+# Ver logs en tiempo real
+tail -f log/development.log
+
+# Health check
+curl http://localhost:3000/api/v1/health
+
+# Verificar concurrencia
+curl http://localhost:3000/api/v1/health | jq '.concurrency'
+```
 
 ## Desarrollo
 
@@ -260,11 +321,13 @@ app/
 ├── controllers/
 │   └── api/
 │       └── v1/
-│           ├── health_controller.rb    # Health check
-│           └── ocr_controller.rb       # Extracción de texto
+│           ├── health_controller.rb    # Health check con concurrencia
+│           └── ocr_controller.rb       # Extracción de texto optimizada
 config/
 ├── initializers/
+│   ├── concurrent_ocr.rb              # Configuración de concurrencia
 │   └── cors.rb                        # Configuración CORS
+├── puma.rb                            # Configuración de workers/threads
 └── routes.rb                          # Rutas de la API
 ```
 
@@ -274,20 +337,24 @@ config/
 # Ejecutar todos los tests
 rails test
 
-# Ejecutar tests específicos
-rails test test/controllers/api/v1/ocr_controller_test.rb
+# Test de concurrencia
+.\test_simple_concurrent.ps1 -ConcurrentRequests 5 -TotalRequests 20
 ```
 
-### Logs
+### Logs y Debugging
 
-Los logs de la aplicación incluyen información detallada sobre:
+Los logs incluyen información detallada sobre:
 - Comandos de Tesseract ejecutados
 - Errores de procesamiento
 - Tiempos de respuesta
+- Información de concurrencia
 
 ```bash
 # Ver logs en tiempo real
 tail -f log/development.log
+
+# Logs específicos de OCR
+grep "OCR" log/development.log
 ```
 
 ## Ejemplos de Uso
@@ -295,7 +362,7 @@ tail -f log/development.log
 ### cURL - Health Check
 
 ```bash
-curl -X GET http://localhost:3000/api/v1/health
+curl -X GET http://localhost:3000/api/v1/health | jq
 ```
 
 ### cURL - OCR con Base64
@@ -333,26 +400,39 @@ console.log(result.text);
 
 ## Troubleshooting
 
-### Error: "Tesseract OCR no está disponible en WSL"
+### Error: "Tesseract OCR no disponible"
 
-1. Verificar que WSL esté instalado y funcionando
-2. Instalar Tesseract en WSL:
+1. Verificar instalación de Tesseract:
    ```bash
-   sudo apt update
-   sudo apt install tesseract-ocr
+   tesseract --version
+   ```
+2. Instalar Tesseract si es necesario:
+   ```bash
+   sudo apt install tesseract-ocr tesseract-ocr-spa
    ```
 
-### Error: "No se pudo extraer texto de la imagen"
+### Error: "No se pudo extraer texto"
 
 1. Verificar que la imagen contenga texto legible
-2. Asegurar que la imagen tenga buena calidad y contraste
+2. Asegurar buena calidad y contraste de la imagen
 3. Probar con diferentes idiomas de OCR
+4. Verificar tamaño de imagen (<10MB)
 
-### Error de conversión de rutas
+### Problemas de Concurrencia
 
-1. Verificar que la imagen se esté guardando correctamente
-2. Comprobar los logs para ver la ruta convertida
-3. Asegurar que WSL tenga acceso a la ruta especificada
+1. Verificar configuración en health check:
+   ```bash
+   curl http://localhost:3000/api/v1/health | jq '.concurrency'
+   ```
+2. Ajustar variables de entorno si es necesario
+3. Monitorear logs durante carga alta
+
+### Rendimiento Lento
+
+1. Optimizar imágenes antes del envío
+2. Aumentar workers/threads si hay recursos disponibles
+3. Verificar limpieza de archivos temporales
+4. Considerar cache para imágenes repetidas
 
 ## Contribución
 
@@ -374,4 +454,4 @@ Para soporte técnico o preguntas:
 
 ---
 
-**ByMedellin ImageOCR API** - Desarrollado con ❤️ usando Ruby on Rails y Tesseract OCR
+**ByMedellin OCR API** - Desarrollado con ❤️ usando Ruby on Rails y Tesseract OCR
